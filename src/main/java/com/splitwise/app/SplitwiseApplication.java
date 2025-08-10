@@ -1,15 +1,12 @@
-package net.engineeringdigest.journalApp;
-
+package com.splitwise.app;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class JournalApplication {
+public class SplitwiseApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(JournalApplication.class, args);
+        SpringApplication.run(SplitwiseApplication.class, args);
     }
-
-
 }
