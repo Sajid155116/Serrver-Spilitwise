@@ -1,97 +1,134 @@
 package com.splitwise.app.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.index.Indexed;
 
-import javax.persistence.*;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
-@Entity
-@Table(name = "transactions")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Document(collection = "transactions")
 public class Transaction {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
     
-    @NotBlank(message = "Description is required")
-    @Size(min = 1, max = 255, message = "Description must be between 1 and 255 characters")
-    @Column(nullable = false)
+    @Indexed
+    private String groupId;
+    
     private String description;
-    
-    @NotNull(message = "Amount is required")
-    @DecimalMin(value = "0.01", message = "Amount must be greater than 0")
-    @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
-    
-    @Column(nullable = false, length = 3)
-    private String currency = "USD";
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "payer_id", nullable = false)
-    private User payer;
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "group_id")
-    private Group group;
-    
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private TransactionType type;
-    
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private TransactionStatus status = TransactionStatus.PENDING;
-    
-    @OneToMany(mappedBy = "transaction", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<TransactionSplit> splits = new HashSet<>();
-    
-    @Column(name = "transaction_date", nullable = false)
-    private LocalDateTime transactionDate;
-    
-    @Size(max = 1000, message = "Notes cannot exceed 1000 characters")
+    private String currency;
+    private String paidById;
+    private LocalDateTime date;
+    private String category;
     private String notes;
-    
-    @Column(name = "receipt_url")
-    private String receiptUrl;
-    
-    @Enumerated(EnumType.STRING)
-    @Column(name = "split_type", nullable = false)
-    private SplitType splitType = SplitType.EQUAL;
-    
-    @Column(name = "is_settled")
-    private boolean settled = false;
-    
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    private Set<String> splitUserIds = new HashSet<>();
     private LocalDateTime createdAt;
-    
-    @UpdateTimestamp
-    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-    
-    public enum TransactionType {
-        EXPENSE, PAYMENT, SETTLEMENT
+
+    // Default constructor
+    public Transaction() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
-    
-    public enum TransactionStatus {
-        PENDING, CONFIRMED, REJECTED, CANCELLED
+
+    // Getters and Setters
+    public String getId() {
+        return id;
     }
-    
-    public enum SplitType {
-        EQUAL, EXACT, PERCENTAGE, SHARES
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(String groupId) {
+        this.groupId = groupId;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+
+    public String getCurrency() {
+        return currency;
+    }
+
+    public void setCurrency(String currency) {
+        this.currency = currency;
+    }
+
+    public String getPaidById() {
+        return paidById;
+    }
+
+    public void setPaidById(String paidById) {
+        this.paidById = paidById;
+    }
+
+    public LocalDateTime getDate() {
+        return date;
+    }
+
+    public void setDate(LocalDateTime date) {
+        this.date = date;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
+    public Set<String> getSplitUserIds() {
+        return splitUserIds;
+    }
+
+    public void setSplitUserIds(Set<String> splitUserIds) {
+        this.splitUserIds = splitUserIds;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

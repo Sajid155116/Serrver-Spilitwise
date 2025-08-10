@@ -2,9 +2,7 @@ package com.splitwise.app.service;
 
 import com.splitwise.app.dto.GroupDto;
 import com.splitwise.app.dto.GroupResponseDto;
-import com.splitwise.app.dto.UserResponseDto;
 import com.splitwise.app.entity.Group;
-import com.splitwise.app.entity.User;
 import com.splitwise.app.exception.UserNotFoundException;
 import com.splitwise.app.repository.GroupRepository;
 import com.splitwise.app.repository.UserRepository;
@@ -29,134 +27,125 @@ public class GroupService {
     private UserService userService;
 
     public GroupResponseDto createGroup(GroupDto groupDto, String creatorEmail) {
-        User creator = userRepository.findByEmail(creatorEmail)
-                .orElseThrow(() -> new UserNotFoundException("Creator not found"));
+        // Verify creator exists
+        if (!userRepository.existsByEmail(creatorEmail)) {
+            throw new UserNotFoundException("Creator not found");
+        }
 
         Group group = new Group();
         group.setName(groupDto.getName());
         group.setDescription(groupDto.getDescription());
-        group.setGroupImageUrl(groupDto.getGroupImageUrl());
-        group.setType(Group.GroupType.valueOf(groupDto.getType().toUpperCase()));
-        group.setCreatedBy(creator);
-        group.setSimplifiedDebt(groupDto.isSimplifiedDebt());
+        group.setCreatedBy(creatorEmail);
+        group.setCurrency(groupDto.getCurrency() != null ? groupDto.getCurrency() : "USD");
 
         // Add members including creator
-        Set<User> members = new HashSet<>();
-        members.add(creator);
+        Set<String> members = new HashSet<>();
+        members.add(creatorEmail);
 
         if (groupDto.getMemberIds() != null && !groupDto.getMemberIds().isEmpty()) {
-            for (Long memberId : groupDto.getMemberIds()) {
-                User member = userRepository.findById(memberId)
-                        .orElseThrow(() -> new UserNotFoundException("Member not found with id: " + memberId));
-                members.add(member);
-            }
+            members.addAll(groupDto.getMemberIds());
         }
 
-        group.setMembers(members);
-        Group savedGroup = groupRepository.save(group);
+        group.setMemberIds(members);
+        
+        // Set creator as admin
+        Set<String> admins = new HashSet<>();
+        admins.add(creatorEmail);
+        group.setAdminIds(admins);
 
+        Group savedGroup = groupRepository.save(group);
         return convertToResponseDto(savedGroup);
     }
 
-    public GroupResponseDto getGroupById(Long id) {
+    public GroupResponseDto getGroupById(String id) {
         Group group = groupRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Group not found with id: " + id));
         return convertToResponseDto(group);
     }
 
     public List<GroupResponseDto> getUserGroups(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
-
-        List<Group> groups = groupRepository.findByMembersContaining(user);
+        List<Group> groups = groupRepository.findByMemberIdsContaining(email);
         return groups.stream()
                 .map(this::convertToResponseDto)
                 .collect(Collectors.toList());
     }
 
-    public GroupResponseDto updateGroup(Long id, GroupDto groupDto, String userEmail) {
+    public GroupResponseDto updateGroup(String id, GroupDto groupDto, String userEmail) {
         Group group = groupRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Group not found with id: " + id));
 
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
-
-        // Check if user is creator or member
-        if (!group.getCreatedBy().equals(user) && !group.getMembers().contains(user)) {
+        // Check if user is creator or admin
+        if (!group.getCreatedBy().equals(userEmail) && !group.getAdminIds().contains(userEmail)) {
             throw new RuntimeException("User not authorized to update this group");
         }
 
         group.setName(groupDto.getName());
         group.setDescription(groupDto.getDescription());
-        group.setGroupImageUrl(groupDto.getGroupImageUrl());
-        group.setType(Group.GroupType.valueOf(groupDto.getType().toUpperCase()));
-        group.setSimplifiedDebt(groupDto.isSimplifiedDebt());
+        group.setCurrency(groupDto.getCurrency());
 
         Group savedGroup = groupRepository.save(group);
         return convertToResponseDto(savedGroup);
     }
 
-    public GroupResponseDto addMemberToGroup(Long groupId, Long memberId, String userEmail) {
+    public GroupResponseDto addMemberToGroup(String groupId, String memberEmail, String userEmail) {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found with id: " + groupId));
 
-        User requestingUser = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
-
-        User newMember = userRepository.findById(memberId)
-                .orElseThrow(() -> new UserNotFoundException("Member not found with id: " + memberId));
-
-        // Check if requesting user is member of the group
-        if (!group.getMembers().contains(requestingUser)) {
-            throw new RuntimeException("User not authorized to add members to this group");
+        // Check if user is creator or admin
+        if (!group.getCreatedBy().equals(userEmail) && !group.getAdminIds().contains(userEmail)) {
+            throw new RuntimeException("User not authorized to modify this group");
         }
 
-        group.getMembers().add(newMember);
-        Group savedGroup = groupRepository.save(group);
+        // Verify member exists
+        if (!userRepository.existsByEmail(memberEmail)) {
+            throw new UserNotFoundException("Member not found");
+        }
 
+        Set<String> members = new HashSet<>(group.getMemberIds());
+        members.add(memberEmail);
+        group.setMemberIds(members);
+
+        Group savedGroup = groupRepository.save(group);
         return convertToResponseDto(savedGroup);
     }
 
-    public GroupResponseDto removeMemberFromGroup(Long groupId, Long memberId, String userEmail) {
+    public GroupResponseDto removeMemberFromGroup(String groupId, String memberEmail, String userEmail) {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found with id: " + groupId));
 
-        User requestingUser = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
-
-        User memberToRemove = userRepository.findById(memberId)
-                .orElseThrow(() -> new UserNotFoundException("Member not found with id: " + memberId));
-
-        // Check if requesting user is creator or the member being removed
-        if (!group.getCreatedBy().equals(requestingUser) && !requestingUser.equals(memberToRemove)) {
-            throw new RuntimeException("User not authorized to remove this member");
+        // Check if user is creator or admin
+        if (!group.getCreatedBy().equals(userEmail) && !group.getAdminIds().contains(userEmail)) {
+            throw new RuntimeException("User not authorized to modify this group");
         }
 
-        // Don't allow removing the creator
-        if (group.getCreatedBy().equals(memberToRemove)) {
+        // Cannot remove creator
+        if (group.getCreatedBy().equals(memberEmail)) {
             throw new RuntimeException("Cannot remove group creator");
         }
 
-        group.getMembers().remove(memberToRemove);
-        Group savedGroup = groupRepository.save(group);
+        Set<String> members = new HashSet<>(group.getMemberIds());
+        members.remove(memberEmail);
+        group.setMemberIds(members);
 
+        // Remove from admins if they were an admin
+        Set<String> admins = new HashSet<>(group.getAdminIds());
+        admins.remove(memberEmail);
+        group.setAdminIds(admins);
+
+        Group savedGroup = groupRepository.save(group);
         return convertToResponseDto(savedGroup);
     }
 
-    public void deleteGroup(Long id, String userEmail) {
+    public void deleteGroup(String id, String userEmail) {
         Group group = groupRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Group not found with id: " + id));
 
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
-
-        // Only creator can delete the group
-        if (!group.getCreatedBy().equals(user)) {
+        // Only creator can delete group
+        if (!group.getCreatedBy().equals(userEmail)) {
             throw new RuntimeException("Only group creator can delete the group");
         }
 
-        group.setStatus(Group.GroupStatus.DELETED);
-        groupRepository.save(group);
+        groupRepository.deleteById(id);
     }
 
     private GroupResponseDto convertToResponseDto(Group group) {
@@ -164,36 +153,12 @@ public class GroupService {
         dto.setId(group.getId());
         dto.setName(group.getName());
         dto.setDescription(group.getDescription());
-        dto.setGroupImageUrl(group.getGroupImageUrl());
-        dto.setType(group.getType().toString());
-        dto.setStatus(group.getStatus().toString());
-        dto.setSimplifiedDebt(group.isSimplifiedDebt());
+        dto.setCreatedBy(group.getCreatedBy());
+        dto.setMemberIds(group.getMemberIds());
+        dto.setAdminIds(group.getAdminIds());
+        dto.setCurrency(group.getCurrency());
         dto.setCreatedAt(group.getCreatedAt());
         dto.setUpdatedAt(group.getUpdatedAt());
-
-        // Convert creator to UserResponseDto
-        UserResponseDto creatorDto = new UserResponseDto();
-        creatorDto.setId(group.getCreatedBy().getId());
-        creatorDto.setName(group.getCreatedBy().getName());
-        creatorDto.setEmail(group.getCreatedBy().getEmail());
-        dto.setCreatedBy(creatorDto);
-
-        // Convert members to UserResponseDto list
-        List<UserResponseDto> members = group.getMembers().stream()
-                .map(member -> {
-                    UserResponseDto memberDto = new UserResponseDto();
-                    memberDto.setId(member.getId());
-                    memberDto.setName(member.getName());
-                    memberDto.setEmail(member.getEmail());
-                    memberDto.setPhoneNumber(member.getPhoneNumber());
-                    memberDto.setProfilePictureUrl(member.getProfilePictureUrl());
-                    return memberDto;
-                })
-                .collect(Collectors.toList());
-        dto.setMembers(members);
-
-        dto.setTransactionCount(group.getTransactions().size());
-
         return dto;
     }
 }

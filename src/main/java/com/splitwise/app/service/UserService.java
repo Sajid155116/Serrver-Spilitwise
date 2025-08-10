@@ -55,7 +55,7 @@ public class UserService {
         return convertToResponseDto(savedUser);
     }
 
-    public UserResponseDto getUserById(Long id) {
+    public UserResponseDto getUserById(String id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
         return convertToResponseDto(user);
@@ -76,7 +76,7 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
-    public UserResponseDto updateUser(Long id, UserRegistrationDto updateDto) {
+    public UserResponseDto updateUser(String id, UserRegistrationDto updateDto) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
 

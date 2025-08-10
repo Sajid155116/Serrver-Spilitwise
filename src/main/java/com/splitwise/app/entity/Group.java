@@ -1,79 +1,106 @@
 package com.splitwise.app.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.index.Indexed;
 
-import javax.persistence.*;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
-@Entity
-@Table(name = "groups")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Document(collection = "groups")
 public class Group {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
     
-    @NotBlank(message = "Group name is required")
-    @Size(min = 2, max = 100, message = "Group name must be between 2 and 100 characters")
-    @Column(nullable = false)
+    @Indexed(unique = true)
     private String name;
     
-    @Size(max = 500, message = "Description cannot exceed 500 characters")
     private String description;
-    
-    @Column(name = "group_image_url")
-    private String groupImageUrl;
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by", nullable = false)
-    private User createdBy;
-    
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private GroupType type = GroupType.GENERAL;
-    
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private GroupStatus status = GroupStatus.ACTIVE;
-    
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "group_members",
-        joinColumns = @JoinColumn(name = "group_id"),
-        inverseJoinColumns = @JoinColumn(name = "user_id")
-    )
-    private Set<User> members = new HashSet<>();
-    
-    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private Set<Transaction> transactions = new HashSet<>();
-    
-    @Column(name = "is_simplified_debt")
-    private boolean simplifiedDebt = true;
-    
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    private String createdBy;
+    private Set<String> memberIds = new HashSet<>();
+    private Set<String> adminIds = new HashSet<>();
+    private String currency;
     private LocalDateTime createdAt;
-    
-    @UpdateTimestamp
-    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-    
-    public enum GroupType {
-        GENERAL, TRIP, HOME, OFFICE, FRIENDS, COUPLE, OTHER
+
+    // Default constructor
+    public Group() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
-    
-    public enum GroupStatus {
-        ACTIVE, ARCHIVED, DELETED
+
+    // Getters and Setters
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public Set<String> getMemberIds() {
+        return memberIds;
+    }
+
+    public void setMemberIds(Set<String> memberIds) {
+        this.memberIds = memberIds;
+    }
+
+    public Set<String> getAdminIds() {
+        return adminIds;
+    }
+
+    public void setAdminIds(Set<String> adminIds) {
+        this.adminIds = adminIds;
+    }
+
+    public String getCurrency() {
+        return currency;
+    }
+
+    public void setCurrency(String currency) {
+        this.currency = currency;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

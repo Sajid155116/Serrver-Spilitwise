@@ -37,7 +37,7 @@ public class GroupController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getGroup(@PathVariable Long id) {
+    public ResponseEntity<?> getGroup(@PathVariable String id) {
         try {
             GroupResponseDto group = groupService.getGroupById(id);
             return ResponseEntity.ok(group);
@@ -58,7 +58,7 @@ public class GroupController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateGroup(@PathVariable Long id, 
+    public ResponseEntity<?> updateGroup(@PathVariable String id, 
                                        @Valid @RequestBody GroupDto groupDto,
                                        @RequestHeader("Authorization") String authHeader) {
         try {
@@ -70,26 +70,26 @@ public class GroupController {
         }
     }
 
-    @PostMapping("/{id}/members/{memberId}")
-    public ResponseEntity<?> addMember(@PathVariable Long id, 
-                                     @PathVariable Long memberId,
+    @PostMapping("/{id}/members/{memberEmail}")
+    public ResponseEntity<?> addMember(@PathVariable String id, 
+                                     @PathVariable String memberEmail,
                                      @RequestHeader("Authorization") String authHeader) {
         try {
             String email = extractEmailFromToken(authHeader);
-            GroupResponseDto group = groupService.addMemberToGroup(id, memberId, email);
+            GroupResponseDto group = groupService.addMemberToGroup(id, memberEmail, email);
             return ResponseEntity.ok(group);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
-    @DeleteMapping("/{id}/members/{memberId}")
-    public ResponseEntity<?> removeMember(@PathVariable Long id, 
-                                        @PathVariable Long memberId,
+    @DeleteMapping("/{id}/members/{memberEmail}")
+    public ResponseEntity<?> removeMember(@PathVariable String id, 
+                                        @PathVariable String memberEmail,
                                         @RequestHeader("Authorization") String authHeader) {
         try {
             String email = extractEmailFromToken(authHeader);
-            GroupResponseDto group = groupService.removeMemberFromGroup(id, memberId, email);
+            GroupResponseDto group = groupService.removeMemberFromGroup(id, memberEmail, email);
             return ResponseEntity.ok(group);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -97,7 +97,7 @@ public class GroupController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteGroup(@PathVariable Long id,
+    public ResponseEntity<?> deleteGroup(@PathVariable String id,
                                        @RequestHeader("Authorization") String authHeader) {
         try {
             String email = extractEmailFromToken(authHeader);

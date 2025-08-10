@@ -1,80 +1,118 @@
 package com.splitwise.app.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.index.Indexed;
 
-import javax.persistence.*;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "settlements")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Document(collection = "settlements")
 public class Settlement {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "payer_id", nullable = false)
-    private User payer; // Who is paying
+    @Indexed
+    private String groupId;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "payee_id", nullable = false)
-    private User payee; // Who is receiving the payment
+    @Indexed
+    private String fromUserId;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "group_id")
-    private Group group;
+    @Indexed
+    private String toUserId;
     
-    @NotNull(message = "Amount is required")
-    @DecimalMin(value = "0.01", message = "Amount must be greater than 0")
-    @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
-    
-    @Column(nullable = false, length = 3)
-    private String currency = "USD";
-    
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private SettlementStatus status = SettlementStatus.PENDING;
-    
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private SettlementType type = SettlementType.MANUAL;
-    
-    @Column(name = "settlement_date")
-    private LocalDateTime settlementDate;
-    
-    @Column(name = "payment_method")
-    private String paymentMethod;
-    
-    @Column(name = "transaction_reference")
-    private String transactionReference;
-    
-    private String notes;
-    
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    private String currency;
+    private String status;
+    private LocalDateTime settledAt;
     private LocalDateTime createdAt;
-    
-    @UpdateTimestamp
-    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-    
-    public enum SettlementStatus {
-        PENDING, COMPLETED, CANCELLED, REJECTED
+
+    // Default constructor
+    public Settlement() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
-    
-    public enum SettlementType {
-        MANUAL, AUTOMATIC, CASH, ONLINE_TRANSFER, VENMO, PAYPAL, OTHER
+
+    // Getters and Setters
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(String groupId) {
+        this.groupId = groupId;
+    }
+
+    public String getFromUserId() {
+        return fromUserId;
+    }
+
+    public void setFromUserId(String fromUserId) {
+        this.fromUserId = fromUserId;
+    }
+
+    public String getToUserId() {
+        return toUserId;
+    }
+
+    public void setToUserId(String toUserId) {
+        this.toUserId = toUserId;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+
+    public String getCurrency() {
+        return currency;
+    }
+
+    public void setCurrency(String currency) {
+        this.currency = currency;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public LocalDateTime getSettledAt() {
+        return settledAt;
+    }
+
+    public void setSettledAt(LocalDateTime settledAt) {
+        this.settledAt = settledAt;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }
