@@ -6,7 +6,7 @@ import com.splitwise.app.entity.User;
 import com.splitwise.app.exception.UserAlreadyExistsException;
 import com.splitwise.app.exception.UserNotFoundException;
 import com.splitwise.app.repository.UserRepository;
-import com.splitwise.app.util.EmailUtil;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -174,5 +174,15 @@ public class UserService {
     public User findByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+    }
+
+    public User findByEmailVerificationToken(String token) {
+        return userRepository.findByEmailVerificationToken(token)
+                .orElseThrow(() -> new UserNotFoundException("Invalid verification token"));
+    }
+
+    public User findByPasswordResetToken(String token) {
+        return userRepository.findByPasswordResetToken(token)
+                .orElseThrow(() -> new UserNotFoundException("Invalid password reset token"));
     }
 }

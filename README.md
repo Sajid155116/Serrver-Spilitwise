@@ -1,328 +1,210 @@
-# Splitwise App - Backend
+# Splitwise App - Backend Server
 
-A comprehensive expense sharing application backend built with Spring Boot, featuring JWT authentication, email services, and complete expense management functionality.
+A comprehensive backend server for a Splitwise-like expense splitting application built with Spring Boot, featuring user management, group management, expense tracking, and automated debt calculations.
 
 ## Features
 
-- 🔐 **User Authentication**: JWT-based authentication with email verification
-- 👥 **Group Management**: Create and manage expense groups
-- 💰 **Expense Tracking**: Add, split, and track expenses
-- 🧮 **Settlement Calculation**: Automatic debt calculation and settlement
-- 📧 **Email Notifications**: Email verification, password reset, and notifications
-- 🔒 **Security**: Spring Security with JWT tokens
-- 📱 **API Ready**: RESTful APIs ready for React Native integration
+### 🔐 Authentication & Security
+- JWT-based authentication
+- User registration with email verification
+- Password reset functionality
+- Role-based access control
+- Secure password hashing with BCrypt
 
-## Tech Stack
+### 👥 User Management
+- User registration and login
+- Profile management
+- Email verification system
+- Password reset capabilities
 
-- **Backend Framework**: Spring Boot 2.7.16
-- **Database**: MySQL with JPA/Hibernate
-- **Authentication**: JWT (JSON Web Tokens)
-- **Email Service**: Gmail SMTP
-- **Security**: Spring Security
-- **Build Tool**: Maven
-- **Java Version**: 8
+### 🏠 Group Management
+- Create and manage expense groups
+- Add/remove group members
+- Different group types (General, Trip, Home, Office, Friends, Couple, Other)
+- Group status management (Active, Archived, Deleted)
+
+### 💰 Expense Tracking
+- Add expenses with detailed information
+- Multiple split types (Equal, Exact, Percentage, Shares)
+- Transaction status tracking
+- Receipt upload support
+- Currency support (default: USD)
+
+### 📊 Debt Management
+- Automatic debt calculations
+- Settlement tracking
+- Payment method support
+- Debt simplification algorithms
+
+### 📧 Email Notifications
+- Welcome emails
+- Expense notifications
+- Settlement confirmations
+- Password reset emails
+
+## Technology Stack
+
+- **Java 8+**
+- **Spring Boot 2.7.16**
+- **Spring Security** with JWT
+- **Spring Data JPA**
+- **MySQL Database**
+- **Lombok** for reducing boilerplate
+- **Maven** for dependency management
 
 ## Prerequisites
 
 - Java 8 or higher
-- MySQL 8.0 or higher
-- Maven 3.6 or higher
-- Gmail account with app password for email service
+- Maven 3.6+
+- MySQL 8.0+
+- SMTP server access (for email functionality)
 
 ## Setup Instructions
 
 ### 1. Database Setup
-
-Create a MySQL database:
-
 ```sql
 CREATE DATABASE splitwise_db;
+CREATE USER 'splitwise_user'@'localhost' IDENTIFIED BY 'your_password';
+GRANT ALL PRIVILEGES ON splitwise_db.* TO 'splitwise_user'@'localhost';
+FLUSH PRIVILEGES;
 ```
 
-### 2. Environment Configuration
+### 2. Configuration
+Update `src/main/resources/application.properties` with your configuration:
 
-Create environment variables or update `application.yml`:
-
-```bash
+```properties
 # Database Configuration
-DB_URL=jdbc:mysql://localhost:3306/splitwise_db
-DB_USERNAME=root
-DB_PASSWORD=your_mysql_password
+spring.datasource.url=jdbc:mysql://localhost:3306/splitwise_db?useSSL=false&serverTimezone=UTC
+spring.datasource.username=splitwise_user
+spring.datasource.password=your_password
 
 # Email Configuration
-MAIL_USERNAME=your-email@gmail.com
-MAIL_PASSWORD=your-gmail-app-password
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=your-email@gmail.com
+spring.mail.password=your-app-password
 
 # JWT Configuration
-JWT_SECRET=mySecretKey123456789012345678901234567890
+jwt.secret=your-super-secret-jwt-key-here-make-it-very-long-and-secure
+jwt.expiration=86400000
 ```
 
-### 3. Gmail App Password Setup
-
-1. Enable 2-Factor Authentication on your Gmail account
-2. Go to [Google App Passwords](https://myaccount.google.com/apppasswords)
-3. Generate an app password for "Mail"
-4. Use this app password in `MAIL_PASSWORD`
-
-### 4. Build and Run
-
+### 3. Build and Run
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd splitwise-app
-
-# Build the project
-mvn clean install
+# Clean and compile
+./mvnw clean compile
 
 # Run the application
-mvn spring-boot:run
+./mvnw spring-boot:run
 ```
 
 The application will start on `http://localhost:8080`
 
-## API Documentation
+## API Endpoints
 
-### Authentication Endpoints
+### Authentication (`/api/auth`)
+- `POST /register` - User registration
+- `POST /login` - User login
+- `GET /verify-email` - Email verification
+- `POST /resend-verification` - Resend verification email
+- `POST /forgot-password` - Initiate password reset
+- `POST /reset-password` - Reset password
+- `POST /validate-token` - Validate JWT token
 
-#### Register User
-```http
-POST /api/auth/register
-Content-Type: application/json
+### Groups (`/api/groups`)
+- `POST /` - Create new group
+- `GET /{id}` - Get group details
+- `GET /` - Get user's groups
+- `PUT /{id}` - Update group
+- `POST /{id}/members/{memberId}` - Add member to group
+- `DELETE /{id}/members/{memberId}` - Remove member from group
+- `DELETE /{id}` - Delete group
 
-{
-    "name": "John Doe",
-    "email": "john@example.com",
-    "password": "password123",
-    "phoneNumber": "1234567890"
-}
-```
-
-#### Login
-```http
-POST /api/auth/login
-Content-Type: application/json
-
-{
-    "email": "john@example.com",
-    "password": "password123"
-}
-```
-
-#### Verify Email
-```http
-GET /api/auth/verify-email?token=verification_token
-```
-
-#### Forgot Password
-```http
-POST /api/auth/forgot-password?email=john@example.com
-```
-
-#### Reset Password
-```http
-POST /api/auth/reset-password?token=reset_token&newPassword=newPassword123
-```
-
-### Group Management Endpoints
-
-#### Create Group
-```http
-POST /api/groups
-Authorization: Bearer <jwt_token>
-Content-Type: application/json
-
-{
-    "name": "Trip to Paris",
-    "description": "Expenses for our Paris trip",
-    "type": "TRIP",
-    "memberIds": [1, 2, 3],
-    "simplifiedDebt": true
-}
-```
-
-#### Get User Groups
-```http
-GET /api/groups
-Authorization: Bearer <jwt_token>
-```
-
-#### Get Group by ID
-```http
-GET /api/groups/{groupId}
-Authorization: Bearer <jwt_token>
-```
-
-#### Update Group
-```http
-PUT /api/groups/{groupId}
-Authorization: Bearer <jwt_token>
-Content-Type: application/json
-
-{
-    "name": "Updated Group Name",
-    "description": "Updated description",
-    "type": "FRIENDS"
-}
-```
-
-#### Add Member to Group
-```http
-POST /api/groups/{groupId}/members/{memberId}
-Authorization: Bearer <jwt_token>
-```
-
-#### Remove Member from Group
-```http
-DELETE /api/groups/{groupId}/members/{memberId}
-Authorization: Bearer <jwt_token>
-```
-
-#### Delete Group
-```http
-DELETE /api/groups/{groupId}
-Authorization: Bearer <jwt_token>
-```
-
-### Test Endpoints
-
-#### Health Check
-```http
-GET /api/test/health
-```
-
-#### Ping
-```http
-GET /api/test/ping
-```
+### Test (`/api/test`)
+- `GET /health` - Health check
+- `GET /ping` - Simple ping endpoint
 
 ## Database Schema
 
-### Users Table
-- `id` (Primary Key)
-- `name`
-- `email` (Unique)
-- `password` (Encrypted)
-- `phone_number`
-- `profile_picture_url`
-- `is_email_verified`
-- `email_verification_token`
-- `password_reset_token`
-- `password_reset_expires_at`
-- `status` (ACTIVE, INACTIVE, SUSPENDED)
-- `created_at`
-- `updated_at`
-
-### Groups Table
-- `id` (Primary Key)
-- `name`
-- `description`
-- `group_image_url`
-- `created_by` (Foreign Key to Users)
-- `type` (GENERAL, TRIP, HOME, OFFICE, FRIENDS, COUPLE, OTHER)
-- `status` (ACTIVE, ARCHIVED, DELETED)
-- `is_simplified_debt`
-- `created_at`
-- `updated_at`
-
-### Group Members Table
-- `group_id` (Foreign Key to Groups)
-- `user_id` (Foreign Key to Users)
-
-### Transactions Table
-- `id` (Primary Key)
-- `description`
-- `amount`
-- `currency`
-- `payer_id` (Foreign Key to Users)
-- `group_id` (Foreign Key to Groups)
-- `type` (EXPENSE, PAYMENT, SETTLEMENT)
-- `status` (PENDING, CONFIRMED, REJECTED, CANCELLED)
-- `transaction_date`
-- `notes`
-- `receipt_url`
-- `split_type` (EQUAL, EXACT, PERCENTAGE, SHARES)
-- `is_settled`
-- `created_at`
-- `updated_at`
-
-### Transaction Splits Table
-- `id` (Primary Key)
-- `transaction_id` (Foreign Key to Transactions)
-- `user_id` (Foreign Key to Users)
-- `amount`
-- `share_percentage`
-- `share_count`
-- `is_settled`
-- `settled_at`
-- `status` (PENDING, ACCEPTED, REJECTED, SETTLED)
-- `created_at`
-- `updated_at`
-
-### Settlements Table
-- `id` (Primary Key)
-- `payer_id` (Foreign Key to Users)
-- `payee_id` (Foreign Key to Users)
-- `group_id` (Foreign Key to Groups)
-- `amount`
-- `currency`
-- `status` (PENDING, COMPLETED, CANCELLED, REJECTED)
-- `type` (MANUAL, AUTOMATIC, CASH, ONLINE_TRANSFER, VENMO, PAYPAL, OTHER)
-- `settlement_date`
-- `payment_method`
-- `transaction_reference`
-- `notes`
-- `created_at`
-- `updated_at`
-
-## Email Templates
-
-The application includes email templates for:
-
-1. **Email Verification**: Welcome email with verification link
-2. **Password Reset**: Password reset instructions
-3. **Welcome Email**: Sent after email verification
-4. **Expense Notifications**: Notify users about new expenses
-5. **Settlement Notifications**: Notify users about settlements
+The application uses the following main entities:
+- **User** - User accounts and profiles
+- **Group** - Expense groups
+- **Transaction** - Individual expenses/payments
+- **TransactionSplit** - How expenses are split among users
+- **Settlement** - Debt settlements between users
 
 ## Security Features
 
 - JWT token-based authentication
-- Password encryption using BCrypt
+- Password encryption with BCrypt
 - Email verification for new accounts
-- Password reset functionality
-- Token expiration handling
+- Secure password reset process
+- Role-based access control
 - CORS configuration for frontend integration
 
-## Error Handling
+## Email Configuration
 
-Global exception handler provides consistent error responses:
+The application supports multiple email providers. For Gmail:
+1. Enable 2-factor authentication
+2. Generate an App Password
+3. Use the App Password in the configuration
 
-- `UserNotFoundException` (404)
-- `UserAlreadyExistsException` (409)
-- `BadCredentialsException` (401)
-- `IllegalStateException` (400)
-- `MethodArgumentNotValidException` (400)
-- Generic exceptions (500)
+## Development
 
-## Future Enhancements
+### Project Structure
+```
+src/main/java/com/splitwise/app/
+├── config/          # Configuration classes
+├── controller/      # REST controllers
+├── dto/            # Data Transfer Objects
+├── entity/         # JPA entities
+├── exception/      # Custom exceptions
+├── repository/     # Data access layer
+├── security/       # Security configuration
+├── service/        # Business logic
+└── SplitwiseApplication.java
+```
 
-- [ ] Transaction management (add expenses, split bills)
-- [ ] Settlement calculation algorithms
-- [ ] Push notifications
-- [ ] File upload for receipts
-- [ ] Currency conversion
-- [ ] Expense categories
-- [ ] Reporting and analytics
-- [ ] AI-powered expense suggestions
-- [ ] Web3 integration for crypto payments
+### Adding New Features
+1. Create entity classes in the `entity` package
+2. Create DTOs in the `dto` package
+3. Create repository interfaces in the `repository` package
+4. Implement business logic in the `service` package
+5. Create REST endpoints in the `controller` package
+
+## Testing
+
+```bash
+# Run tests
+./mvnw test
+
+# Run with coverage
+./mvnw jacoco:report
+```
+
+## Deployment
+
+### Docker (Recommended)
+```dockerfile
+FROM openjdk:8-jre-alpine
+COPY target/splitwise-app-*.jar app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "/app.jar"]
+```
+
+### Traditional Deployment
+1. Build the JAR: `./mvnw clean package`
+2. Deploy the JAR from `target/` directory
+3. Configure environment variables
+4. Run with: `java -jar splitwise-app.jar`
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+3. Make your changes
+4. Add tests for new functionality
+5. Submit a pull request
 
 ## License
 
@@ -330,4 +212,17 @@ This project is licensed under the MIT License.
 
 ## Support
 
-For support and questions, please create an issue in the repository.
+For issues and questions:
+1. Check the existing issues
+2. Create a new issue with detailed description
+3. Include logs and error messages
+
+## Roadmap
+
+- [ ] Transaction categories and tags
+- [ ] Recurring expenses
+- [ ] Export functionality (PDF, CSV)
+- [ ] Mobile app API endpoints
+- [ ] Real-time notifications
+- [ ] Multi-currency support
+- [ ] Advanced debt optimization algorithms
